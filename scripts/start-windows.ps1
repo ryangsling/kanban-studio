@@ -4,6 +4,7 @@ $RootDir = Split-Path -Parent $PSScriptRoot
 $ImageName = "pm-mvp"
 $ContainerName = "pm-mvp"
 $VolumeName = "pm-mvp-data"
+$EnvFile = Join-Path $RootDir ".env"
 
 docker build --tag $ImageName $RootDir
 
@@ -14,12 +15,18 @@ if ($existing) {
 
 docker volume create $VolumeName | Out-Null
 
-docker run `
-  --detach `
-  --name $ContainerName `
-  --publish 8000:8000 `
-  --volume "${VolumeName}:/data" `
-  --env "DB_PATH=/data/pm.db" `
-  $ImageName | Out-Null
+$dockerArgs = @(
+  "--detach"
+  "--name", $ContainerName
+  "--publish", "8000:8000"
+  "--volume", "${VolumeName}:/data"
+  "--env", "DB_PATH=/data/pm.db"
+)
+
+if (Test-Path $EnvFile) {
+  $dockerArgs += @("--env-file", $EnvFile)
+}
+
+docker run @dockerArgs $ImageName | Out-Null
 
 Write-Output "PM MVP started: http://localhost:8000"

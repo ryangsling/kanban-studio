@@ -45,4 +45,5 @@ Then open `http://localhost:8000`, sign in with `user` / `password`, and call:
 
 The start scripts now mount a named Docker volume (`pm-mvp-data`) and store SQLite at `/data/pm.db`, so board data persists across container stop/start.
 
-Set `OPENROUTER_API_KEY` in your environment (or `.env`) before calling AI connectivity.
+Set `OPENROUTER_API_KEY` in root `.env` before calling AI connectivity.
+The start scripts pass `.env` to the container automatically when that file exists.

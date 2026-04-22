@@ -30,15 +30,15 @@ export const KanbanCard = ({ card, onDelete }: KanbanCardProps) => {
       {...listeners}
       data-testid={`card-${card.id}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h4 className="font-display text-base font-semibold text-[var(--navy-dark)]">
-            {card.title}
-          </h4>
-          <p className="mt-2 text-sm leading-6 text-[var(--gray-text)]">
-            {card.details}
-          </p>
-        </div>
+      <div>
+        <h4 className="font-display text-base font-semibold text-[var(--navy-dark)]">
+          {card.title}
+        </h4>
+        <p className="mt-2 text-sm leading-6 text-[var(--gray-text)]">
+          {card.details}
+        </p>
+      </div>
+      <div className="mt-3 flex justify-center border-t border-[var(--stroke)] pt-2">
         <button
           type="button"
           onClick={() => onDelete(card.id)}

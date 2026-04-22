@@ -35,6 +35,7 @@ test("adds a card to a column", async ({ page }) => {
 });
 
 test("moves a card between columns", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
   await signIn(page);
   const card = page.getByTestId("card-card-1");
   const targetColumn = page.getByTestId("column-col-review");
@@ -54,6 +55,7 @@ test("moves a card between columns", async ({ page }) => {
     columnBox.y + 120,
     { steps: 12 }
   );
+  await page.waitForTimeout(120);
   await page.mouse.up();
   await expect(targetColumn.getByTestId("card-card-1")).toBeVisible();
 });
@@ -76,4 +78,54 @@ test("persists board changes after reload", async ({ page }) => {
 
   await page.reload();
   await expect(page.getByText("Persistent card")).toBeVisible();
+});
+
+test("shows ai sidebar chat-only reply", async ({ page }) => {
+  await page.route("**/api/ai/chat?username=user", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b:free",
+        assistantMessage: "No board change needed.",
+        boardUpdated: false,
+        board: null,
+      }),
+    });
+  });
+
+  await signIn(page);
+  await page.getByLabel("Message").fill("What should I do next?");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText("No board change needed.")).toBeVisible();
+});
+
+test("applies ai sidebar board update response", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  const boardResponse = await page.request.get(
+    "http://127.0.0.1:3000/api/board?username=user"
+  );
+  const board = await boardResponse.json();
+  board.columns[0].title = "AI Backlog";
+
+  await page.route("**/api/ai/chat?username=user", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b:free",
+        assistantMessage: "Renamed first column to AI Backlog.",
+        boardUpdated: true,
+        board,
+      }),
+    });
+  });
+
+  await signIn(page);
+  await page.getByLabel("Message").fill("Rename the first column.");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText("Renamed first column to AI Backlog.")).toBeVisible();
+  await expect(
+    page.getByTestId("column-col-backlog").getByLabel("Column title")
+  ).toHaveValue("AI Backlog");
 });

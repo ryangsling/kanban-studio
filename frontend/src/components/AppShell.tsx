@@ -1,9 +1,15 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { AiSidebar } from "@/components/AiSidebar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import type { BoardData } from "@/lib/kanban";
-import { fetchBoard, saveBoard } from "@/lib/api";
+import {
+  fetchBoard,
+  saveBoard,
+  sendAIChat,
+  type AIChatHistoryMessage,
+} from "@/lib/api";
 
 const AUTH_STORAGE_KEY = "pm-authenticated";
 const VALID_USERNAME = "user";
@@ -23,6 +29,10 @@ export const AppShell = () => {
   const [boardLoading, setBoardLoading] = useState(false);
   const [boardError, setBoardError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [chatHistory, setChatHistory] = useState<AIChatHistoryMessage[]>([]);
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatError, setChatError] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -81,6 +91,10 @@ export const AppShell = () => {
     setBoard(null);
     setBoardError("");
     setIsSaving(false);
+    setChatHistory([]);
+    setChatDraft("");
+    setChatError("");
+    setChatLoading(false);
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
   };
 
@@ -97,6 +111,42 @@ export const AppShell = () => {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleChatSubmit = async () => {
+    const message = chatDraft.trim();
+    if (!message || !board || chatLoading) {
+      return;
+    }
+
+    const historySnapshot = chatHistory;
+    const boardSnapshot = board;
+
+    setChatDraft("");
+    setChatError("");
+    setChatLoading(true);
+    setChatHistory((current) => [...current, { role: "user", content: message }]);
+
+    try {
+      const response = await sendAIChat(VALID_USERNAME, {
+        message,
+        board: boardSnapshot,
+        history: historySnapshot,
+      });
+      setChatHistory((current) => [
+        ...current,
+        { role: "assistant", content: response.assistantMessage },
+      ]);
+      if (response.boardUpdated && response.board) {
+        setBoard(response.board);
+      }
+    } catch (error: unknown) {
+      setChatError(
+        error instanceof Error ? error.message : "Failed to contact AI assistant."
+      );
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -187,12 +237,23 @@ export const AppShell = () => {
           </p>
         </main>
       ) : board ? (
-        <KanbanBoard
-          board={board}
-          onBoardChange={handleBoardChange}
-          isSaving={isSaving}
-          saveError={boardError}
-        />
+        <>
+          <KanbanBoard
+            board={board}
+            onBoardChange={handleBoardChange}
+            isSaving={isSaving}
+            saveError={boardError}
+          />
+          <AiSidebar
+            history={chatHistory}
+            draft={chatDraft}
+            onDraftChange={setChatDraft}
+            onSubmit={handleChatSubmit}
+            isLoading={chatLoading}
+            error={chatError}
+            disabled={boardLoading || isSaving}
+          />
+        </>
       ) : (
         <main className="mx-auto flex min-h-[70vh] max-w-[1500px] items-center justify-center px-6">
           <p className="text-sm font-semibold text-[var(--secondary-purple)]">
