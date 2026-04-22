@@ -3,13 +3,22 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
 
+from app.ai import (
+    DEFAULT_MODEL,
+    OpenRouterConfigError,
+    get_openrouter_api_key,
+    run_openrouter_prompt,
+)
 from app.db import BoardStore
-from app.schemas import BoardData
+from app.schemas import AIConnectivityResponse, BoardData
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FRONTEND_DIST = PROJECT_ROOT / "frontend" / "out"
 DEFAULT_DB_PATH = PROJECT_ROOT / "backend" / "pm.db"
+
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 def resolve_frontend_dist() -> Path:
@@ -53,6 +62,26 @@ def create_app(frontend_dist: Path | None = None, db_path: Path | None = None) -
             return store.save_board(username, board)
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @app.post("/api/ai/connectivity", response_model=AIConnectivityResponse)
+    async def ai_connectivity_check() -> AIConnectivityResponse:
+        prompt = "2+2"
+        try:
+            api_key = get_openrouter_api_key()
+            response_text = await run_openrouter_prompt(prompt, api_key=api_key)
+        except OpenRouterConfigError as error:
+            raise HTTPException(status_code=500, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+        except Exception as error:
+            raise HTTPException(
+                status_code=502, detail=f"OpenRouter request failed: {error}"
+            ) from error
+        return AIConnectivityResponse(
+            model=DEFAULT_MODEL,
+            prompt=prompt,
+            response=response_text,
+        )
 
     app.mount("/", StaticFiles(directory=dist_dir, html=True), name="frontend")
     return app

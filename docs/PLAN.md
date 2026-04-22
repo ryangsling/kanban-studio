@@ -17,7 +17,29 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 - Integration testing: robust API + frontend/backend flow coverage for core user journeys.
 - E2E testing: at least one happy path plus selected failure-path checks for user login, board updates, and AI-assisted updates.
 
+## Current implementation status
+
+- **Completed:** Parts 1, 2, 3, 4, 5, 6, 7, 8
+- **Pending:** Parts 9, 10
+
+## Confirmed design decisions (implemented)
+
+- FastAPI serves statically exported Next.js output at `/`.
+- Frontend auth gate is MVP-local (`user` / `password`) with browser `localStorage` session flag.
+- Backend persistence uses SQLite with auto-create initialization and seed data for the MVP user/board.
+- Board API contract is:
+  - `GET /api/board?username=user`
+  - `PUT /api/board?username=user`
+- Card identity persisted as stable external IDs (`card-*`) in DB (`cards.external_id`) to match frontend state shape.
+- Docker runtime persistence is via named volume `pm-mvp-data`, with DB path `/data/pm.db` (`DB_PATH`).
+- OpenRouter integration uses:
+  - model `openai/gpt-oss-120b:free`
+  - endpoint `POST /api/ai/connectivity` with prompt `2+2`
+  - `OPENROUTER_API_KEY` loaded from environment / `.env`
+
 ## Part 1 - Planning and project baseline (hard gate)
+
+**Status:** Completed
 
 ### Tasks
 
@@ -37,6 +59,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 - [ ] User explicitly approves plan before Part 2 starts
 
 ## Part 2 - Scaffolding (Docker + FastAPI skeleton + scripts)
+
+**Status:** Completed
 
 ### Tasks
 
@@ -61,6 +85,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 
 ## Part 3 - Frontend static build and serving from backend
 
+**Status:** Completed
+
 ### Tasks
 
 - [ ] Configure frontend static export/build output for backend serving strategy
@@ -81,6 +107,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 - [ ] Tests pass with meaningful coverage on board behavior
 
 ## Part 4 - Fake login flow (hardcoded credentials)
+
+**Status:** Completed
 
 ### Tasks
 
@@ -103,6 +131,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 
 ## Part 5 - Database modeling and sign-off
 
+**Status:** Completed (sign-off received)
+
 ### Tasks
 
 - [ ] Define SQLite schema for users, boards, columns, cards, and ordering
@@ -121,6 +151,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 - [ ] User explicitly signs off before Part 6 starts
 
 ## Part 6 - Backend API and SQLite persistence
+
+**Status:** Completed
 
 ### Tasks
 
@@ -144,6 +176,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 
 ## Part 7 - Frontend/backend integration for persistent board
 
+**Status:** Completed
+
 ### Tasks
 
 - [ ] Replace frontend in-memory board state with API-backed state
@@ -164,6 +198,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 - [ ] Critical interaction flows are robustly tested end-to-end
 
 ## Part 8 - OpenRouter connectivity
+
+**Status:** Completed
 
 ### Tasks
 
@@ -186,6 +222,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 
 ## Part 9 - Structured AI output for chat + optional board updates
 
+**Status:** Pending
+
 ### Tasks
 
 - [ ] Define strict structured output contract: assistant reply + optional board mutation payload
@@ -206,6 +244,8 @@ Execution will proceed in gated phases. Part 1 is a hard gate: no implementation
 - [ ] Error cases are explicit and do not silently drop critical failures
 
 ## Part 10 - Frontend AI sidebar and live board refresh
+
+**Status:** Pending
 
 ### Tasks
 

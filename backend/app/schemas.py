@@ -16,3 +16,9 @@ class ColumnData(BaseModel):
 class BoardData(BaseModel):
     columns: list[ColumnData]
     cards: dict[str, CardData]
+
+
+class AIConnectivityResponse(BaseModel):
+    model: str
+    prompt: str
+    response: str

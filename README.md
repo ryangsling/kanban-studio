@@ -2,7 +2,7 @@
 
 Local Dockerized scaffold for the Project Management MVP.
 
-## Part 7 status
+## Part 8 status
 
 - FastAPI serves statically exported frontend at `/`
 - Login gate at `/` using fixed credentials (`user` / `password`)
@@ -11,6 +11,7 @@ Local Dockerized scaffold for the Project Management MVP.
   - `GET /api/board?username=user`
   - `PUT /api/board?username=user`
 - API hello endpoint at `/api/hello`
+- OpenRouter connectivity endpoint: `POST /api/ai/connectivity` (sends prompt `2+2`)
 - Dockerized runtime
 - Cross-platform start/stop scripts in `scripts/`
 
@@ -40,5 +41,8 @@ Windows (PowerShell):
 Then open `http://localhost:8000`, sign in with `user` / `password`, and call:
 - `http://localhost:8000/api/hello`
 - `http://localhost:8000/api/board?username=user`
+- `http://localhost:8000/api/ai/connectivity` (POST)
 
 The start scripts now mount a named Docker volume (`pm-mvp-data`) and store SQLite at `/data/pm.db`, so board data persists across container stop/start.
+
+Set `OPENROUTER_API_KEY` in your environment (or `.env`) before calling AI connectivity.
