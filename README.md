@@ -1,21 +1,66 @@
-# PM MVP
+# Kanban Studio
 
-Local Dockerized scaffold for the Project Management MVP.
+Kanban Studio is a local-first project management MVP with:
 
-## Part 8 status
+- a Next.js Kanban UI
+- a FastAPI backend
+- SQLite persistence
+- AI chat powered by OpenRouter (`openai/gpt-oss-120b:free`)
 
-- FastAPI serves statically exported frontend at `/`
-- Login gate at `/` using fixed credentials (`user` / `password`)
-- Kanban board is persisted in SQLite
-- Board API:
-  - `GET /api/board?username=user`
-  - `PUT /api/board?username=user`
-- API hello endpoint at `/api/hello`
-- OpenRouter connectivity endpoint: `POST /api/ai/connectivity` (sends prompt `2+2`)
-- Dockerized runtime
-- Cross-platform start/stop scripts in `scripts/`
+The app runs as a single Dockerized service and includes cross-platform start/stop scripts.
 
-## Run
+## Screenshots
+
+### Login
+![Login screen](docs/screenshots/login.png)
+
+### Board + AI sidebar
+![Kanban board](docs/screenshots/board.png)
+
+### AI sidebar
+![AI chat sidebar](docs/screenshots/ai-sidebar.png)
+
+### Card layout
+![Card layout](docs/screenshots/card.png)
+
+## MVP features
+
+- Sign in with fixed credentials (`user` / `password`)
+- One board per signed-in user
+- Rename column titles
+- Add, edit (inline title/details via board state), delete, and drag cards between columns
+- AI chat sidebar that can:
+  - answer in chat
+  - optionally return a full validated board update that is persisted
+
+## Tech stack
+
+- Frontend: Next.js 16 + React 19 + Tailwind CSS
+- Backend: FastAPI + Pydantic
+- DB: SQLite (auto-create on startup)
+- AI: OpenRouter chat completions
+- Packaging/runtime: Docker
+- Python package manager: `uv`
+
+## Project structure
+
+```text
+backend/     FastAPI app, SQLite store, API tests
+frontend/    Next.js app, unit tests, Playwright e2e tests
+scripts/     start/stop scripts (Linux/macOS/Windows)
+docs/        planning docs and screenshots
+```
+
+## Requirements
+
+- Docker
+- An OpenRouter API key in root `.env`:
+
+```env
+OPENROUTER_API_KEY=your_key_here
+```
+
+## Run with Docker
 
 Linux:
 
@@ -38,12 +83,73 @@ Windows (PowerShell):
 ./scripts/stop-windows.ps1
 ```
 
-Then open `http://localhost:8000`, sign in with `user` / `password`, and call:
-- `http://localhost:8000/api/hello`
-- `http://localhost:8000/api/board?username=user`
-- `http://localhost:8000/api/ai/connectivity` (POST)
+The start scripts automatically pass root `.env` to the container when it exists.
 
-The start scripts now mount a named Docker volume (`pm-mvp-data`) and store SQLite at `/data/pm.db`, so board data persists across container stop/start.
+Open: `http://localhost:8000`
 
-Set `OPENROUTER_API_KEY` in root `.env` before calling AI connectivity.
-The start scripts pass `.env` to the container automatically when that file exists.
+## Default login
+
+- Username: `user`
+- Password: `password`
+
+## API overview
+
+- `GET /api/hello`
+- `GET /api/board?username=user`
+- `PUT /api/board?username=user`
+- `POST /api/ai/connectivity`
+- `POST /api/ai/chat?username=user`
+
+### AI chat contract
+
+Request body:
+
+```json
+{
+  "message": "move card-1 to review",
+  "board": { "columns": [], "cards": {} },
+  "history": [{ "role": "user", "content": "..." }]
+}
+```
+
+Response body:
+
+```json
+{
+  "model": "openai/gpt-oss-120b:free",
+  "assistantMessage": "Done.",
+  "boardUpdated": true,
+  "board": { "columns": [], "cards": {} }
+}
+```
+
+If `boardUpdated` is `false`, `board` is `null`.
+
+## Persistence
+
+- SQLite path in container: `/data/pm.db`
+- Docker volume: `pm-mvp-data`
+- Data survives container restart
+
+## Testing
+
+Backend:
+
+```bash
+cd backend
+uv run pytest -q
+```
+
+Frontend unit tests:
+
+```bash
+cd frontend
+npm run test:unit
+```
+
+Frontend e2e tests:
+
+```bash
+cd frontend
+npm run test:e2e
+```
