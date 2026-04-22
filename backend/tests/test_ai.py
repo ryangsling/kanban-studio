@@ -1,12 +1,12 @@
-import json
 import asyncio
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import httpx
 from fastapi.testclient import TestClient
 
-from app.ai import DEFAULT_MODEL, run_openrouter_prompt
+from app.ai import DEFAULT_MODEL, extract_first_json_object, run_openrouter_prompt
 from app.main import create_app
 
 
@@ -88,3 +88,128 @@ def test_connectivity_endpoint_requires_api_key(monkeypatch) -> None:
 
     assert response.status_code == 500
     assert response.json() == {"detail": "OPENROUTER_API_KEY is not set."}
+
+
+def test_extract_first_json_object_rejects_non_json() -> None:
+    try:
+        extract_first_json_object("not-json")
+        assert False, "Expected ValueError for invalid JSON."
+    except ValueError as error:
+        assert str(error) == "AI response is not valid JSON."
+
+
+def test_ai_chat_noop_response(monkeypatch) -> None:
+    async def fake_run_openrouter_messages(messages, *, api_key: str, **_kwargs) -> str:
+        assert api_key == "fake-key"
+        assert messages[-1]["role"] == "user"
+        return json.dumps(
+            {
+                "assistantMessage": "No board update needed.",
+                "boardUpdate": None,
+            }
+        )
+
+    with TemporaryDirectory() as temp_dir:
+        dist = Path(temp_dir) / "dist"
+        dist.mkdir(parents=True, exist_ok=True)
+        (dist / "index.html").write_text("<html></html>", encoding="utf-8")
+        db_path = Path(temp_dir) / "test.db"
+        client = TestClient(create_app(frontend_dist=dist, db_path=db_path))
+        board = client.get("/api/board").json()
+
+        monkeypatch.setattr("app.main.get_openrouter_api_key", lambda: "fake-key")
+        monkeypatch.setattr("app.main.run_openrouter_messages", fake_run_openrouter_messages)
+
+        response = client.post(
+            "/api/ai/chat",
+            json={
+                "message": "What should I do next?",
+                "board": board,
+                "history": [{"role": "user", "content": "Earlier question"}],
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "model": DEFAULT_MODEL,
+        "assistantMessage": "No board update needed.",
+        "boardUpdated": False,
+        "board": None,
+    }
+
+
+def test_ai_chat_applies_valid_board_update(monkeypatch) -> None:
+    with TemporaryDirectory() as temp_dir:
+        dist = Path(temp_dir) / "dist"
+        dist.mkdir(parents=True, exist_ok=True)
+        (dist / "index.html").write_text("<html></html>", encoding="utf-8")
+        db_path = Path(temp_dir) / "test.db"
+        client = TestClient(create_app(frontend_dist=dist, db_path=db_path))
+        board = client.get("/api/board").json()
+
+        reordered_columns = [board["columns"][1], board["columns"][0], *board["columns"][2:]]
+        reordered_columns[0]["title"] = "Discovery Queue"
+        updated_board = {"columns": reordered_columns, "cards": board["cards"]}
+
+        async def fake_run_openrouter_messages(_messages, *, api_key: str, **_kwargs) -> str:
+            assert api_key == "fake-key"
+            return json.dumps(
+                {
+                    "assistantMessage": "I reordered columns and renamed one.",
+                    "boardUpdate": updated_board,
+                }
+            )
+
+        monkeypatch.setattr("app.main.get_openrouter_api_key", lambda: "fake-key")
+        monkeypatch.setattr("app.main.run_openrouter_messages", fake_run_openrouter_messages)
+
+        response = client.post(
+            "/api/ai/chat",
+            json={"message": "Reorder columns.", "board": board, "history": []},
+        )
+        persisted = client.get("/api/board").json()
+
+    assert response.status_code == 200
+    assert response.json()["boardUpdated"] is True
+    assert response.json()["board"]["columns"][0]["id"] == "col-discovery"
+    assert response.json()["board"]["columns"][0]["title"] == "Discovery Queue"
+    assert persisted["columns"][0]["id"] == "col-discovery"
+    assert persisted["columns"][0]["title"] == "Discovery Queue"
+
+
+def test_ai_chat_rejects_invalid_board_update_and_keeps_board_unchanged(
+    monkeypatch,
+) -> None:
+    with TemporaryDirectory() as temp_dir:
+        dist = Path(temp_dir) / "dist"
+        dist.mkdir(parents=True, exist_ok=True)
+        (dist / "index.html").write_text("<html></html>", encoding="utf-8")
+        db_path = Path(temp_dir) / "test.db"
+        client = TestClient(create_app(frontend_dist=dist, db_path=db_path))
+        board = client.get("/api/board").json()
+        invalid_board = dict(board)
+        invalid_board["columns"] = [*board["columns"]]
+        invalid_board["columns"][0] = dict(invalid_board["columns"][0])
+        invalid_board["columns"][0]["cardIds"] = [*invalid_board["columns"][0]["cardIds"], "ghost-card"]
+
+        async def fake_run_openrouter_messages(_messages, *, api_key: str, **_kwargs) -> str:
+            assert api_key == "fake-key"
+            return json.dumps(
+                {
+                    "assistantMessage": "Done.",
+                    "boardUpdate": invalid_board,
+                }
+            )
+
+        monkeypatch.setattr("app.main.get_openrouter_api_key", lambda: "fake-key")
+        monkeypatch.setattr("app.main.run_openrouter_messages", fake_run_openrouter_messages)
+
+        response = client.post(
+            "/api/ai/chat",
+            json={"message": "Break it", "board": board, "history": []},
+        )
+        after = client.get("/api/board").json()
+
+    assert response.status_code == 502
+    assert "AI response is invalid" in response.json()["detail"]
+    assert after == board

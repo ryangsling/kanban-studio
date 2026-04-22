@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Any
 
 import httpx
@@ -40,9 +41,26 @@ async def run_openrouter_prompt(
     endpoint: str = DEFAULT_OPENROUTER_URL,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> str:
+    return await run_openrouter_messages(
+        [{"role": "user", "content": prompt}],
+        api_key=api_key,
+        model=model,
+        endpoint=endpoint,
+        transport=transport,
+    )
+
+
+async def run_openrouter_messages(
+    messages: list[dict[str, str]],
+    *,
+    api_key: str,
+    model: str = DEFAULT_MODEL,
+    endpoint: str = DEFAULT_OPENROUTER_URL,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> str:
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": messages,
         "temperature": 0,
     }
     headers = {
@@ -65,3 +83,25 @@ async def run_openrouter_prompt(
     if not content:
         raise ValueError("OpenRouter response content is empty.")
     return content
+
+
+def extract_first_json_object(text: str) -> dict[str, Any]:
+    stripped = text.strip()
+    if not stripped:
+        raise ValueError("AI response content is empty.")
+
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        if len(lines) >= 3 and lines[-1].strip() == "```":
+            first = lines[0].strip().lower()
+            if first == "```" or first.startswith("```json"):
+                stripped = "\n".join(lines[1:-1]).strip()
+
+    try:
+        parsed = json.loads(stripped)
+    except json.JSONDecodeError as error:
+        raise ValueError("AI response is not valid JSON.") from error
+
+    if not isinstance(parsed, dict):
+        raise ValueError("AI response JSON must be an object.")
+    return parsed

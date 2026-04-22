@@ -260,6 +260,18 @@ class BoardStore:
                 (now, board_id),
             )
 
+            # Avoid transient UNIQUE(board_id, position) conflicts while reordering.
+            safe_offset = len(board.columns) + 1
+            for position, column in enumerate(board.columns):
+                conn.execute(
+                    """
+                    UPDATE board_columns
+                    SET position = ?, updated_at = ?
+                    WHERE board_id = ? AND key = ?
+                    """,
+                    (position + safe_offset, now, board_id, column.id),
+                )
+
             for position, column in enumerate(board.columns):
                 conn.execute(
                     """
