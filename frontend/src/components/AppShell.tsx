@@ -1,7 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import type { BoardData } from "@/lib/kanban";
+import { fetchBoard, saveBoard } from "@/lib/api";
 
 const AUTH_STORAGE_KEY = "pm-authenticated";
 const VALID_USERNAME = "user";
@@ -17,6 +19,45 @@ export const AppShell = () => {
     }
     return window.localStorage.getItem(AUTH_STORAGE_KEY) === "true";
   });
+  const [board, setBoard] = useState<BoardData | null>(null);
+  const [boardLoading, setBoardLoading] = useState(false);
+  const [boardError, setBoardError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    let isCurrent = true;
+    setBoardLoading(true);
+    setBoardError("");
+
+    const loadBoard = async () => {
+      try {
+        const nextBoard = await fetchBoard(VALID_USERNAME);
+        if (isCurrent) {
+          setBoard(nextBoard);
+        }
+      } catch (error: unknown) {
+        if (isCurrent) {
+          setBoardError(
+            error instanceof Error ? error.message : "Failed to load board."
+          );
+        }
+      } finally {
+        if (isCurrent) {
+          setBoardLoading(false);
+        }
+      }
+    };
+
+    void loadBoard();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [isAuthenticated]);
 
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -37,7 +78,26 @@ export const AppShell = () => {
     setUsername("");
     setPassword("");
     setError("");
+    setBoard(null);
+    setBoardError("");
+    setIsSaving(false);
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  };
+
+  const handleBoardChange = async (nextBoard: BoardData) => {
+    setBoard(nextBoard);
+    setIsSaving(true);
+    setBoardError("");
+    try {
+      const persistedBoard = await saveBoard(VALID_USERNAME, nextBoard);
+      setBoard(persistedBoard);
+    } catch (error: unknown) {
+      setBoardError(
+        error instanceof Error ? error.message : "Failed to persist board."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!isAuthenticated) {
@@ -120,7 +180,26 @@ export const AppShell = () => {
           </button>
         </div>
       </div>
-      <KanbanBoard />
+      {boardLoading ? (
+        <main className="mx-auto flex min-h-[70vh] max-w-[1500px] items-center justify-center px-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
+            Loading board...
+          </p>
+        </main>
+      ) : board ? (
+        <KanbanBoard
+          board={board}
+          onBoardChange={handleBoardChange}
+          isSaving={isSaving}
+          saveError={boardError}
+        />
+      ) : (
+        <main className="mx-auto flex min-h-[70vh] max-w-[1500px] items-center justify-center px-6">
+          <p className="text-sm font-semibold text-[var(--secondary-purple)]">
+            {boardError || "Board unavailable."}
+          </p>
+        </main>
+      )}
     </div>
   );
 };

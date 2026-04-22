@@ -64,3 +64,16 @@ test("logs out to return to login screen", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Kanban Studio" })).not.toBeVisible();
 });
+
+test("persists board changes after reload", async ({ page }) => {
+  await signIn(page);
+  const firstColumn = page.locator('[data-testid^="column-"]').first();
+  await firstColumn.getByRole("button", { name: /add a card/i }).click();
+  await firstColumn.getByPlaceholder("Card title").fill("Persistent card");
+  await firstColumn.getByPlaceholder("Details").fill("Saved in sqlite");
+  await firstColumn.getByRole("button", { name: /add card/i }).click();
+  await expect(firstColumn.getByText("Persistent card")).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText("Persistent card")).toBeVisible();
+});

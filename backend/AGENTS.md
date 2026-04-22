@@ -2,14 +2,22 @@
 
 This folder contains the FastAPI backend scaffold for the PM MVP.
 
-## Current scope (Part 4)
+## Current scope (Part 7)
 
 - `app/main.py`
   - Serves statically exported frontend from `frontend/out` at `/`
-  - Frontend now includes login gate (`user` / `password`) and logout flow
   - `GET /api/hello` returns `{"message":"hello world"}`
+  - `GET /api/board` returns persisted board data
+  - `PUT /api/board` persists board updates
+- `app/db.py`
+  - SQLite schema creation and seeding
+  - Board read/write logic per user
+- `app/schemas.py`
+  - API request/response models for board payloads
 - `tests/test_main.py`
   - Unit coverage for frontend mounting and hello API response
+- `tests/test_board_api.py`
+  - API coverage for board fetch and persist flows
 - `tests/test_frontend_integration.py`
   - Integration coverage for serving real built frontend output
 - `pyproject.toml`

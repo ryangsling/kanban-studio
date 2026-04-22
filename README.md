@@ -2,12 +2,14 @@
 
 Local Dockerized scaffold for the Project Management MVP.
 
-## Part 4 status
+## Part 7 status
 
-- FastAPI backend scaffold in `backend/`
-- Frontend statically exported from `frontend/` and served by FastAPI at `/`
+- FastAPI serves statically exported frontend at `/`
 - Login gate at `/` using fixed credentials (`user` / `password`)
-- Logout control that returns to the login screen
+- Kanban board is persisted in SQLite
+- Board API:
+  - `GET /api/board?username=user`
+  - `PUT /api/board?username=user`
 - API hello endpoint at `/api/hello`
 - Dockerized runtime
 - Cross-platform start/stop scripts in `scripts/`
@@ -35,4 +37,8 @@ Windows (PowerShell):
 ./scripts/stop-windows.ps1
 ```
 
-Then open `http://localhost:8000`, sign in with `user` / `password`, and call `http://localhost:8000/api/hello`.
+Then open `http://localhost:8000`, sign in with `user` / `password`, and call:
+- `http://localhost:8000/api/hello`
+- `http://localhost:8000/api/board?username=user`
+
+The start scripts now mount a named Docker volume (`pm-mvp-data`) and store SQLite at `/data/pm.db`, so board data persists across container stop/start.

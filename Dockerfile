@@ -12,7 +12,8 @@ RUN npm run build
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    DB_PATH=/data/pm.db
 
 WORKDIR /app
 
@@ -25,6 +26,8 @@ COPY backend /app/backend
 COPY --from=frontend-builder /build/frontend/out /app/frontend/out
 
 ENV FRONTEND_DIST=/app/frontend/out
+
+VOLUME ["/data"]
 
 EXPOSE 8000
 
