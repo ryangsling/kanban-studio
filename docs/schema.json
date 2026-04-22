@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0.0",
+  "database": "sqlite",
+  "file": "backend/pm.db",
+  "principles": {
+    "mvp_scope": [
+      "single hardcoded login now",
+      "one board per user now",
+      "supports future multi-user and multi-board extension"
+    ],
+    "ordering_strategy": "integer position columns and cards",
+    "timestamps": "UTC ISO-8601 strings"
+  },
+  "tables": [
+    {
+      "name": "users",
+      "description": "System users. MVP seeds one user with username 'user'.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primary_key": true, "nullable": false },
+        { "name": "username", "type": "TEXT", "nullable": false, "unique": true },
+        { "name": "password_hash", "type": "TEXT", "nullable": false },
+        { "name": "created_at", "type": "TEXT", "nullable": false }
+      ]
+    },
+    {
+      "name": "boards",
+      "description": "Kanban boards. MVP enforces one board per user with a unique owner_user_id.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primary_key": true, "nullable": false },
+        {
+          "name": "owner_user_id",
+          "type": "INTEGER",
+          "nullable": false,
+          "references": { "table": "users", "column": "id", "on_delete": "CASCADE" }
+        },
+        { "name": "name", "type": "TEXT", "nullable": false, "default": "My Board" },
+        { "name": "created_at", "type": "TEXT", "nullable": false },
+        { "name": "updated_at", "type": "TEXT", "nullable": false }
+      ],
+      "constraints": [
+        {
+          "type": "UNIQUE",
+          "columns": ["owner_user_id"],
+          "note": "MVP one board per user. Remove/relax for future multi-board support."
+        }
+      ]
+    },
+    {
+      "name": "board_columns",
+      "description": "Columns for a board. Titles are editable. Order is controlled by position.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primary_key": true, "nullable": false },
+        {
+          "name": "board_id",
+          "type": "INTEGER",
+          "nullable": false,
+          "references": { "table": "boards", "column": "id", "on_delete": "CASCADE" }
+        },
+        { "name": "key", "type": "TEXT", "nullable": false },
+        { "name": "title", "type": "TEXT", "nullable": false },
+        { "name": "position", "type": "INTEGER", "nullable": false },
+        { "name": "created_at", "type": "TEXT", "nullable": false },
+        { "name": "updated_at", "type": "TEXT", "nullable": false }
+      ],
+      "constraints": [
+        { "type": "UNIQUE", "columns": ["board_id", "key"] },
+        { "type": "UNIQUE", "columns": ["board_id", "position"] }
+      ],
+      "notes": [
+        "key stays stable for internal references (e.g., col-backlog).",
+        "title can be renamed by the user without changing key."
+      ]
+    },
+    {
+      "name": "cards",
+      "description": "Cards on a board, assigned to one column and ordered by position inside that column.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "primary_key": true, "nullable": false },
+        {
+          "name": "board_id",
+          "type": "INTEGER",
+          "nullable": false,
+          "references": { "table": "boards", "column": "id", "on_delete": "CASCADE" }
+        },
+        {
+          "name": "column_id",
+          "type": "INTEGER",
+          "nullable": false,
+          "references": { "table": "board_columns", "column": "id", "on_delete": "CASCADE" }
+        },
+        { "name": "title", "type": "TEXT", "nullable": false },
+        { "name": "details", "type": "TEXT", "nullable": false, "default": "" },
+        { "name": "position", "type": "INTEGER", "nullable": false },
+        { "name": "created_at", "type": "TEXT", "nullable": false },
+        { "name": "updated_at", "type": "TEXT", "nullable": false }
+      ],
+      "constraints": [
+        { "type": "UNIQUE", "columns": ["column_id", "position"] }
+      ]
+    }
+  ],
+  "indexes": [
+    { "name": "idx_boards_owner_user_id", "table": "boards", "columns": ["owner_user_id"] },
+    { "name": "idx_board_columns_board_id_position", "table": "board_columns", "columns": ["board_id", "position"] },
+    { "name": "idx_cards_board_id", "table": "cards", "columns": ["board_id"] },
+    { "name": "idx_cards_column_id_position", "table": "cards", "columns": ["column_id", "position"] }
+  ],
+  "mvp_seed": {
+    "user": {
+      "username": "user",
+      "password_source": "hash of literal password 'password'"
+    },
+    "board": {
+      "name": "My Board",
+      "columns": [
+        { "key": "col-backlog", "title": "Backlog", "position": 0 },
+        { "key": "col-discovery", "title": "Discovery", "position": 1 },
+        { "key": "col-progress", "title": "In Progress", "position": 2 },
+        { "key": "col-review", "title": "Review", "position": 3 },
+        { "key": "col-done", "title": "Done", "position": 4 }
+      ]
+    }
+  }
+}
