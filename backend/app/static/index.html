@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PM MVP - Hello</title>
+    <style>
+      :root {
+        --accent-yellow: #ecad0a;
+        --primary-blue: #209dd7;
+        --secondary-purple: #753991;
+        --navy-dark: #032147;
+        --gray-text: #888888;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: Inter, Arial, sans-serif;
+        background: #f7f8fb;
+        color: var(--navy-dark);
+      }
+      .card {
+        width: min(640px, 92vw);
+        border: 1px solid rgba(3, 33, 71, 0.12);
+        border-radius: 16px;
+        background: white;
+        padding: 24px;
+        box-shadow: 0 18px 40px rgba(3, 33, 71, 0.1);
+      }
+      h1 {
+        margin: 0 0 8px 0;
+      }
+      p {
+        margin: 0;
+        color: var(--gray-text);
+      }
+      code {
+        color: var(--primary-blue);
+        font-weight: 600;
+      }
+      .line {
+        margin-top: 16px;
+        border-top: 3px solid var(--accent-yellow);
+        width: 64px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>PM MVP Hello World</h1>
+      <p>
+        FastAPI is running. Try the API endpoint at
+        <code>/api/hello</code>.
+      </p>
+      <div class="line"></div>
+    </main>
+  </body>
+</html>
