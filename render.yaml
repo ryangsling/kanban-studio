@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: kanban-studio
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/hello
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: DB_PATH
+        value: /data/pm.db
+    disk:
+      name: pm-data
+      mountPath: /data
+      sizeGB: 1

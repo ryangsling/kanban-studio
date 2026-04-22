@@ -153,3 +153,37 @@ Frontend e2e tests:
 cd frontend
 npm run test:e2e
 ```
+
+## Easy hosting
+
+### Render (recommended)
+
+This repo includes `render.yaml` for Blueprint deploy.
+
+1. Push this repo to GitHub.
+2. In Render: **New +** -> **Blueprint**.
+3. Select this repo.
+4. Set environment variable:
+   - `OPENROUTER_API_KEY` = your OpenRouter key
+5. Deploy.
+
+`render.yaml` already configures:
+
+- Docker build from `Dockerfile`
+- Health check: `/api/hello`
+- Persistent disk mounted at `/data`
+- `DB_PATH=/data/pm.db`
+
+### Railway
+
+This repo includes `railway.json` for Dockerfile-based deploy.
+
+1. In Railway: **New Project** -> **Deploy from GitHub repo**.
+2. Select this repo.
+3. Add a Volume and mount it to `/data`.
+4. Add environment variables:
+   - `OPENROUTER_API_KEY` = your OpenRouter key
+   - `DB_PATH` = `/data/pm.db`
+5. Deploy.
+
+After deploy, open your service URL and sign in with `user` / `password`.
