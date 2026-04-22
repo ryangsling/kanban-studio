@@ -2,10 +2,11 @@
 
 This folder contains the FastAPI backend scaffold for the PM MVP.
 
-## Current scope (Part 2)
+## Current scope (Part 4)
 
 - `app/main.py`
   - Serves statically exported frontend from `frontend/out` at `/`
+  - Frontend now includes login gate (`user` / `password`) and logout flow
   - `GET /api/hello` returns `{"message":"hello world"}`
 - `tests/test_main.py`
   - Unit coverage for frontend mounting and hello API response
