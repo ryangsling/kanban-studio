@@ -171,8 +171,10 @@ This repo includes `render.yaml` for Blueprint deploy.
 
 - Docker build from `Dockerfile`
 - Health check: `/api/hello`
-- Persistent disk mounted at `/data`
-- `DB_PATH=/data/pm.db`
+- `DB_PATH=/tmp/pm.db` (free-tier compatible, ephemeral storage)
+
+Note: Render free web services do not support persistent disks. Board data resets when the service restarts/sleeps.  
+If you need persistence on Render, switch to a paid plan and mount a disk at `/data`, then set `DB_PATH=/data/pm.db`.
 
 ### Railway
 
