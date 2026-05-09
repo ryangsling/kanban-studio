@@ -49,3 +49,25 @@ class AIChatResponse(BaseModel):
     assistantMessage: str
     boardUpdated: bool
     board: BoardData | None = None
+
+
+class UserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6)
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+
+
+class BoardListItem(BaseModel):
+    id: int
+    name: str
+    created_at: str
+    updated_at: str

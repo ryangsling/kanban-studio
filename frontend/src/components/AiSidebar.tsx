@@ -29,7 +29,7 @@ export const AiSidebar = ({
 
   return (
     <aside
-      className="border-t border-[var(--stroke)] bg-white lg:fixed lg:right-4 lg:top-[72px] lg:z-30 lg:h-[min(48vh,420px)] lg:w-[360px] lg:overflow-hidden lg:rounded-xl lg:border lg:shadow-[var(--shadow)]"
+      className="fixed right-4 top-[72px] z-30 h-[min(80vh,600px)] w-[360px] overflow-hidden rounded-xl border border-[var(--stroke)] bg-white shadow-[var(--shadow)]"
       data-testid="ai-sidebar"
     >
       <div className="flex h-full flex-col">
